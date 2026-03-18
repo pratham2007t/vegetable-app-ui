@@ -1,0 +1,1238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>RecipeFinder — What can I cook?</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body {
+  background: #0e0f0d;
+  color: #e8ede5;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 16px;
+  line-height: 1.6;
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+}
+:root {
+  --green:       #a8c97f;
+  --green-l:     #c4e09a;
+  --green-d:     #6a9e3f;
+  --amber:       #e8b86d;
+  --amber-l:     #f5d49a;
+  --red:         #e07060;
+  --blue:        #7ab8d4;
+  --bg:          #0e0f0d;
+  --bg2:         #151813;
+  --bgc:         #1a1f16;
+  --bgch:        #202619;
+  --bdr:         rgba(168,201,127,.13);
+  --bdrh:        rgba(168,201,127,.32);
+  --txt:         #e8ede5;
+  --txd:         #8a9e80;
+  --txm:         #485840;
+  --r:           14px;
+  --rsm:         10px;
+  --ease:        cubic-bezier(.4,0,.2,1);
+}
+::-webkit-scrollbar { width: 5px; }
+::-webkit-scrollbar-thumb { background: var(--bdrh); border-radius: 3px; }
+
+/* ── LAYOUT ── */
+.app { display: grid; grid-template-columns: 360px 1fr; min-height: 100vh; }
+
+/* ── SIDEBAR ── */
+.sidebar {
+  background: var(--bg2);
+  border-right: 1px solid var(--bdr);
+  display: flex; flex-direction: column;
+  height: 100vh; position: sticky; top: 0; overflow: hidden;
+}
+.sidebar-head {
+  padding: 22px 20px 16px;
+  border-bottom: 1px solid var(--bdr);
+  flex-shrink: 0;
+}
+.logo { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
+.logo-mark {
+  width: 34px; height: 34px; background: var(--green);
+  border-radius: 9px; display: flex; align-items: center; justify-content: center; font-size: 17px;
+}
+.logo-text { font-family: 'Playfair Display', serif; font-size: 17px; font-weight: 700; }
+.logo-sub { font-size: 10px; color: var(--txm); letter-spacing: .07em; text-transform: uppercase; }
+.search-wrap { position: relative; }
+.search-icon { position: absolute; left: 11px; top: 50%; transform: translateY(-50%); font-size: 13px; pointer-events: none; opacity: .45; }
+.search-input {
+  width: 100%; padding: 9px 11px 9px 34px;
+  background: var(--bgc); border: 1px solid var(--bdr);
+  border-radius: var(--rsm); color: var(--txt);
+  font-family: 'DM Sans', sans-serif; font-size: 13px; outline: none;
+  transition: border-color .2s;
+}
+.search-input::placeholder { color: var(--txm); }
+.search-input:focus { border-color: var(--bdrh); }
+
+/* Cat tabs */
+.cat-tabs { padding: 10px 12px; border-bottom: 1px solid var(--bdr); flex-shrink: 0; }
+.cat-tabs-inner { display: flex; gap: 5px; flex-wrap: wrap; }
+.cat-btn {
+  padding: 4px 11px; border-radius: 99px;
+  border: 1px solid var(--bdr); background: transparent;
+  color: var(--txd); font-family: 'DM Sans', sans-serif;
+  font-size: 11px; font-weight: 500; cursor: pointer;
+  transition: all .2s var(--ease);
+  display: flex; align-items: center; gap: 4px;
+}
+.cat-btn:hover { border-color: var(--bdrh); color: var(--txt); }
+.cat-btn.active { background: rgba(168,201,127,.14); border-color: var(--green-d); color: var(--green-l); }
+.cat-dot {
+  width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0;
+}
+
+/* Ingredient grid */
+.veg-scroll { flex: 1; overflow-y: auto; padding: 12px; }
+.cat-section { margin-bottom: 14px; }
+.cat-label {
+  font-size: 10px; font-weight: 500; letter-spacing: .09em;
+  text-transform: uppercase; color: var(--txm);
+  margin-bottom: 8px; padding: 0 2px;
+  display: flex; align-items: center; gap: 6px;
+}
+.cat-label::after { content: ''; flex: 1; height: 1px; background: var(--bdr); }
+.veg-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 7px; }
+.vcard {
+  background: var(--bgc); border: 1px solid var(--bdr);
+  border-radius: var(--rsm); padding: 10px 6px 8px;
+  text-align: center; cursor: pointer;
+  transition: all .2s var(--ease);
+  position: relative; overflow: hidden;
+  animation: popIn .25s var(--ease) both;
+}
+.vcard:hover { border-color: var(--bdrh); background: var(--bgch); transform: translateY(-2px); }
+.vcard.sel { border-color: var(--green-d); background: rgba(168,201,127,.11); }
+.vcard.hidden-card { display: none; }
+.vcard-ico { font-size: 24px; display: block; margin-bottom: 5px; line-height: 1; }
+.vcard-name { font-size: 10px; font-weight: 500; color: var(--txd); line-height: 1.3; }
+.vcard.sel .vcard-name { color: var(--green-l); }
+.vcard-check {
+  position: absolute; top: 5px; right: 5px;
+  width: 14px; height: 14px; background: var(--green); border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 8px; color: #000; font-weight: 700;
+  opacity: 0; transform: scale(.5); transition: all .18s var(--ease);
+}
+.vcard.sel .vcard-check { opacity: 1; transform: scale(1); }
+
+/* Cat color dots */
+.dot-veg    { background: #6a9e3f; }
+.dot-dairy  { background: #7ab8d4; }
+.dot-meat   { background: #c46050; }
+.dot-egg    { background: #e8b86d; }
+.dot-pantry { background: #9a8a6a; }
+.dot-drink  { background: #8080d4; }
+.dot-fruit  { background: #d47090; }
+
+/* Sidebar footer */
+.sidebar-foot {
+  padding: 12px; border-top: 1px solid var(--bdr);
+  flex-shrink: 0; background: var(--bg2);
+}
+.sel-summary {
+  min-height: 32px; margin-bottom: 10px;
+  display: flex; flex-wrap: wrap; gap: 5px; align-items: center;
+  max-height: 72px; overflow-y: auto;
+}
+.sel-hint { font-size: 12px; color: var(--txm); width: 100%; }
+.sel-chip {
+  display: flex; align-items: center; gap: 3px;
+  padding: 2px 7px 2px 5px;
+  background: rgba(168,201,127,.1); border: 1px solid rgba(168,201,127,.22);
+  border-radius: 99px; font-size: 10px; color: var(--green-l);
+  cursor: pointer; transition: background .15s;
+  animation: chipIn .18s var(--ease) both;
+}
+.sel-chip:hover { background: rgba(168,201,127,.18); }
+.sel-chip-x { font-size: 9px; opacity: .55; }
+.find-btn {
+  width: 100%; padding: 12px;
+  background: var(--green); border: none; border-radius: var(--rsm);
+  color: #0e0f0d; font-family: 'DM Sans', sans-serif;
+  font-size: 14px; font-weight: 500; cursor: pointer;
+  transition: all .2s var(--ease);
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+}
+.find-btn:hover { background: var(--green-l); transform: translateY(-1px); }
+.find-btn:active { transform: translateY(0); }
+.find-btn:disabled {
+  background: var(--bgc); color: var(--txm); cursor: default;
+  transform: none; border: 1px solid var(--bdr);
+}
+.count-badge {
+  background: rgba(0,0,0,.18); border-radius: 99px;
+  padding: 1px 7px; font-size: 11px;
+}
+
+/* ── MAIN ── */
+.main { padding: 36px 32px; overflow-y: auto; min-height: 100vh; }
+
+/* Hero */
+.hero { margin-bottom: 32px; }
+.hero-tag { font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: var(--green); margin-bottom: 10px; }
+.hero-title {
+  font-family: 'Playfair Display', serif;
+  font-size: clamp(28px, 3.5vw, 48px); font-weight: 900;
+  line-height: 1.08; letter-spacing: -.02em; margin-bottom: 10px;
+}
+.hero-title span { color: var(--green); }
+.hero-desc { font-size: 14px; color: var(--txd); max-width: 500px; line-height: 1.7; }
+
+/* Stats bar */
+.stats-bar {
+  display: flex; gap: 20px; margin-bottom: 28px;
+  padding: 14px 18px; background: var(--bgc);
+  border: 1px solid var(--bdr); border-radius: var(--r);
+  flex-wrap: wrap;
+}
+.stat { display: flex; flex-direction: column; }
+.stat-num { font-family: 'Playfair Display', serif; font-size: 20px; font-weight: 700; color: var(--green-l); line-height: 1; }
+.stat-lbl { font-size: 11px; color: var(--txm); margin-top: 2px; }
+.stat-div { width: 1px; background: var(--bdr); align-self: stretch; }
+
+/* Results */
+.results-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; flex-wrap: wrap; gap: 8px; }
+.results-title { font-family: 'Playfair Display', serif; font-size: 20px; font-weight: 700; }
+.filter-row { display: flex; gap: 6px; flex-wrap: wrap; }
+.filter-pill {
+  padding: 4px 12px; border-radius: 99px; font-size: 11px; font-weight: 500;
+  border: 1px solid var(--bdr); background: transparent; color: var(--txd);
+  cursor: pointer; transition: all .18s; font-family: 'DM Sans', sans-serif;
+}
+.filter-pill:hover { border-color: var(--bdrh); color: var(--txt); }
+.filter-pill.on { background: rgba(168,201,127,.12); border-color: var(--green-d); color: var(--green-l); }
+
+/* State box */
+.state-box {
+  text-align: center; padding: 70px 24px;
+  border: 1px dashed var(--bdr); border-radius: var(--r);
+}
+.state-ico { font-size: 52px; margin-bottom: 14px; }
+.state-title { font-family: 'Playfair Display', serif; font-size: 20px; font-weight: 700; margin-bottom: 6px; }
+.state-desc { font-size: 13px; color: var(--txd); }
+
+/* Recipe cards */
+.recipe-grid { display: flex; flex-direction: column; gap: 14px; }
+.rcard {
+  background: var(--bgc); border: 1px solid var(--bdr);
+  border-radius: var(--r); overflow: hidden;
+  transition: border-color .2s;
+  animation: cardIn .3s var(--ease) both;
+}
+.rcard:hover { border-color: var(--bdrh); }
+.rcard.perfect { border-color: rgba(168,201,127,.38); }
+.rcard-head {
+  display: grid; grid-template-columns: 56px 1fr auto;
+  align-items: center; gap: 14px; padding: 16px 18px;
+  cursor: pointer; transition: background .15s;
+}
+.rcard-head:hover { background: var(--bgch); }
+.rcard-ico-wrap {
+  width: 50px; height: 50px;
+  background: rgba(168,201,127,.07); border: 1px solid var(--bdr);
+  border-radius: var(--rsm); display: flex; align-items: center; justify-content: center;
+  font-size: 26px; flex-shrink: 0; transition: all .2s;
+}
+.rcard.open .rcard-ico-wrap { background: rgba(168,201,127,.13); border-color: var(--bdrh); }
+.rcard-name { font-family: 'Playfair Display', serif; font-size: 16px; font-weight: 700; margin-bottom: 5px; }
+.rcard-meta { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-bottom: 6px; }
+.meta-pill {
+  font-size: 10px; padding: 2px 7px; border-radius: 99px;
+  border: 1px solid var(--bdr); color: var(--txm);
+}
+.meta-pill.time { color: var(--txd); }
+.cat-badge {
+  font-size: 10px; padding: 2px 7px; border-radius: 99px;
+  border: 1px solid; font-weight: 500;
+}
+.cat-badge.Vegetarian  { background: rgba(106,158,63,.12);  border-color: rgba(106,158,63,.3);  color: #a8c97f; }
+.cat-badge.NonVeg      { background: rgba(196,96,80,.12);   border-color: rgba(196,96,80,.3);   color: #e07060; }
+.cat-badge.Egg         { background: rgba(232,184,109,.12); border-color: rgba(232,184,109,.3); color: #e8b86d; }
+.cat-badge.Drink       { background: rgba(128,128,212,.12); border-color: rgba(128,128,212,.3); color: #a0a0e0; }
+.cat-badge.Snack       { background: rgba(154,138,106,.12); border-color: rgba(154,138,106,.3); color: #c0aa80; }
+.ingr-tags { display: flex; flex-wrap: wrap; gap: 4px; }
+.itag {
+  font-size: 10px; padding: 2px 7px; border-radius: 99px;
+  border: 1px solid var(--bdr); color: var(--txm);
+}
+.itag.have { background: rgba(168,201,127,.11); border-color: rgba(168,201,127,.28); color: var(--green-l); }
+.itag.missing { background: rgba(224,112,96,.08); border-color: rgba(224,112,96,.22); color: #e07060; }
+.rcard-right { text-align: right; flex-shrink: 0; }
+.match-score { font-family: 'Playfair Display', serif; font-size: 24px; font-weight: 700; line-height: 1; }
+.match-score.perfect { color: var(--green-l); }
+.match-score.partial  { color: var(--amber); }
+.match-label { font-size: 10px; color: var(--txm); margin-top: 2px; }
+.expand-arrow { display: block; margin-top: 6px; font-size: 13px; color: var(--txm); transition: transform .3s var(--ease); }
+.rcard.open .expand-arrow { transform: rotate(180deg); }
+
+/* Card body */
+.rcard-body { border-top: 1px solid var(--bdr); padding: 18px; display: none; animation: slideDown .28s var(--ease); }
+.rcard.open .rcard-body { display: block; }
+.recipe-desc {
+  font-size: 13px; color: var(--txd); line-height: 1.7;
+  margin-bottom: 18px; padding: 10px 14px;
+  background: rgba(168,201,127,.04);
+  border-left: 3px solid var(--green-d);
+  border-radius: 0 var(--rsm) var(--rsm) 0;
+}
+.body-cols { display: grid; grid-template-columns: 1fr 1.5fr; gap: 20px; }
+.col-title {
+  font-size: 10px; font-weight: 500; letter-spacing: .08em;
+  text-transform: uppercase; color: var(--txm); margin-bottom: 10px;
+}
+.ingr-list { display: flex; flex-direction: column; gap: 7px; }
+.ingr-row { display: flex; align-items: center; gap: 9px; font-size: 12px; }
+.ingr-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+.ingr-dot.have    { background: var(--green); }
+.ingr-dot.missing { background: var(--red); }
+.ingr-dot.optional{ background: var(--txm); }
+.ingr-name { flex: 1; }
+.ingr-status { font-size: 10px; color: var(--txm); }
+.ingr-status.have    { color: var(--green); }
+.ingr-status.missing { color: var(--red); }
+.steps-list { display: flex; flex-direction: column; gap: 10px; }
+.step { display: flex; gap: 12px; font-size: 12px; line-height: 1.6; color: var(--txd); }
+.step-num {
+  width: 22px; height: 22px; border-radius: 50%; border: 1px solid var(--bdr);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 10px; font-weight: 500; color: var(--txm); flex-shrink: 0; margin-top: 1px;
+}
+.nutrition-row {
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 7px;
+  margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--bdr);
+}
+.nutr-item {
+  background: rgba(168,201,127,.04); border: 1px solid var(--bdr);
+  border-radius: var(--rsm); padding: 7px 8px; text-align: center;
+}
+.nutr-val { font-family: 'Playfair Display', serif; font-size: 15px; font-weight: 700; color: var(--green-l); }
+.nutr-lbl { font-size: 9px; color: var(--txm); margin-top: 2px; }
+
+/* Animations */
+@keyframes popIn    { from { opacity:0; transform:scale(.88); } to { opacity:1; transform:scale(1); } }
+@keyframes cardIn   { from { opacity:0; transform:translateY(14px); } to { opacity:1; transform:translateY(0); } }
+@keyframes chipIn   { from { opacity:0; transform:scale(.7); } to { opacity:1; transform:scale(1); } }
+@keyframes slideDown{ from { opacity:0; transform:translateY(-6px); } to { opacity:1; transform:translateY(0); } }
+
+/* Mobile */
+@media (max-width: 800px) {
+  .app { grid-template-columns: 1fr; }
+  .sidebar { height: auto; position: static; }
+  .veg-scroll { max-height: 340px; }
+  .main { padding: 20px 14px; }
+  .body-cols { grid-template-columns: 1fr; }
+  .nutrition-row { grid-template-columns: repeat(2, 1fr); }
+}
+</style>
+</head>
+<body>
+<div class="app">
+
+<!-- ═══════════════ SIDEBAR ═══════════════ -->
+<aside class="sidebar">
+  <div class="sidebar-head">
+    <div class="logo">
+      <div class="logo-mark">🍽️</div>
+      <div>
+        <div class="logo-text">RecipeFinder</div>
+        <div class="logo-sub">Cook with what you have</div>
+      </div>
+    </div>
+    <div class="search-wrap">
+      <span class="search-icon">🔍</span>
+      <input type="text" class="search-input" id="vegSearch" placeholder="Search ingredients…" oninput="filterVegs(this.value)"/>
+    </div>
+  </div>
+
+  <div class="cat-tabs">
+    <div class="cat-tabs-inner" id="catTabs"></div>
+  </div>
+
+  <div class="veg-scroll">
+    <div id="vegGrid"></div>
+  </div>
+
+  <div class="sidebar-foot">
+    <div class="sel-summary" id="selSummary">
+      <span class="sel-hint">Pick ingredients you have at home</span>
+    </div>
+    <button class="find-btn" id="findBtn" disabled onclick="findRecipes()">
+      <span>Find Recipes</span>
+      <span class="count-badge" id="selCount">0 selected</span>
+    </button>
+  </div>
+</aside>
+
+<!-- ═══════════════ MAIN ═══════════════ -->
+<main class="main" id="mainPanel">
+  <div class="hero">
+    <div class="hero-tag">🍳 Smart Recipe Finder</div>
+    <h1 class="hero-title">What can I<br/><span>cook today?</span></h1>
+    <p class="hero-desc">Select any ingredients you have — vegetables, dairy, meat, eggs, drinks, or pantry staples. We'll find every recipe you can make right now.</p>
+  </div>
+
+  <div class="stats-bar">
+    <div class="stat"><span class="stat-num" id="statVegs">0</span><span class="stat-lbl">Ingredients</span></div>
+    <div class="stat-div"></div>
+    <div class="stat"><span class="stat-num" id="statRecipes">0</span><span class="stat-lbl">Recipes</span></div>
+    <div class="stat-div"></div>
+    <div class="stat"><span class="stat-num" id="statSelected">0</span><span class="stat-lbl">Selected</span></div>
+    <div class="stat-div"></div>
+    <div class="stat"><span class="stat-num" id="statMatches">—</span><span class="stat-lbl">Matches</span></div>
+  </div>
+
+  <div id="resultsArea">
+    <div class="state-box">
+      <div class="state-ico">🛒</div>
+      <div class="state-title">Select your ingredients</div>
+      <div class="state-desc">Choose from vegetables, dairy, meat, eggs, drinks & more on the left</div>
+    </div>
+  </div>
+</main>
+</div>
+
+<script>
+/* ════════════════════════════════════════════
+   INGREDIENTS DATA
+════════════════════════════════════════════ */
+const VEGS = [
+  // Vegetables
+  { id:'spinach',     name:'Spinach',      ico:'🥬', cat:'Vegetables' },
+  { id:'kale',        name:'Kale',         ico:'🥬', cat:'Vegetables' },
+  { id:'cabbage',     name:'Cabbage',      ico:'🥬', cat:'Vegetables' },
+  { id:'lettuce',     name:'Lettuce',      ico:'🥗', cat:'Vegetables' },
+  { id:'carrot',      name:'Carrot',       ico:'🥕', cat:'Vegetables' },
+  { id:'potato',      name:'Potato',       ico:'🥔', cat:'Vegetables' },
+  { id:'sweetpotato', name:'Sweet potato', ico:'🍠', cat:'Vegetables' },
+  { id:'beetroot',    name:'Beetroot',     ico:'🫙', cat:'Vegetables' },
+  { id:'broccoli',    name:'Broccoli',     ico:'🥦', cat:'Vegetables' },
+  { id:'cauliflower', name:'Cauliflower',  ico:'🥦', cat:'Vegetables' },
+  { id:'tomato',      name:'Tomato',       ico:'🍅', cat:'Vegetables' },
+  { id:'pepper',      name:'Bell pepper',  ico:'🫑', cat:'Vegetables' },
+  { id:'zucchini',    name:'Zucchini',     ico:'🥒', cat:'Vegetables' },
+  { id:'cucumber',    name:'Cucumber',     ico:'🥒', cat:'Vegetables' },
+  { id:'corn',        name:'Corn',         ico:'🌽', cat:'Vegetables' },
+  { id:'onion',       name:'Onion',        ico:'🧅', cat:'Vegetables' },
+  { id:'garlic',      name:'Garlic',       ico:'🧄', cat:'Vegetables' },
+  { id:'mushroom',    name:'Mushroom',     ico:'🍄', cat:'Vegetables' },
+  { id:'eggplant',    name:'Eggplant',     ico:'🍆', cat:'Vegetables' },
+  { id:'peas',        name:'Peas',         ico:'🫛', cat:'Vegetables' },
+  // Dairy
+  { id:'milk',        name:'Milk',         ico:'🥛', cat:'Dairy' },
+  { id:'butter',      name:'Butter',       ico:'🧈', cat:'Dairy' },
+  { id:'cheese',      name:'Cheese',       ico:'🧀', cat:'Dairy' },
+  { id:'cream',       name:'Heavy cream',  ico:'🫙', cat:'Dairy' },
+  { id:'yogurt',      name:'Yogurt',       ico:'🥣', cat:'Dairy' },
+  { id:'paneer',      name:'Paneer',       ico:'🟨', cat:'Dairy' },
+  { id:'icecream',    name:'Ice cream',    ico:'🍦', cat:'Dairy' },
+  // Eggs
+  { id:'egg',         name:'Egg',          ico:'🥚', cat:'Eggs' },
+  // Non-Veg
+  { id:'chicken',     name:'Chicken',      ico:'🍗', cat:'Non-Veg' },
+  { id:'mince',       name:'Minced meat',  ico:'🥩', cat:'Non-Veg' },
+  { id:'fish',        name:'Fish',         ico:'🐟', cat:'Non-Veg' },
+  { id:'shrimp',      name:'Shrimp',       ico:'🍤', cat:'Non-Veg' },
+  { id:'bacon',       name:'Bacon',        ico:'🥓', cat:'Non-Veg' },
+  // Drinks & Beverages
+  { id:'coffee',      name:'Coffee',       ico:'☕', cat:'Drinks' },
+  { id:'tea',         name:'Tea',          ico:'🍵', cat:'Drinks' },
+  { id:'cola',        name:'Cola / Soda',  ico:'🥤', cat:'Drinks' },
+  { id:'juice',       name:'Fruit juice',  ico:'🧃', cat:'Drinks' },
+  { id:'coconutmilk', name:'Coconut milk', ico:'🥥', cat:'Drinks' },
+  // Fruits
+  { id:'banana',      name:'Banana',       ico:'🍌', cat:'Fruits' },
+  { id:'lemon',       name:'Lemon',        ico:'🍋', cat:'Fruits' },
+  { id:'mango',       name:'Mango',        ico:'🥭', cat:'Fruits' },
+  { id:'strawberry',  name:'Strawberry',   ico:'🍓', cat:'Fruits' },
+  { id:'apple',       name:'Apple',        ico:'🍎', cat:'Fruits' },
+  // Pantry
+  { id:'rice',        name:'Rice',         ico:'🍚', cat:'Pantry' },
+  { id:'pasta',       name:'Pasta',        ico:'🍝', cat:'Pantry' },
+  { id:'bread',       name:'Bread',        ico:'🍞', cat:'Pantry' },
+  { id:'flour',       name:'Flour',        ico:'🌾', cat:'Pantry' },
+  { id:'sugar',       name:'Sugar',        ico:'🫙', cat:'Pantry' },
+  { id:'oats',        name:'Oats',         ico:'🥣', cat:'Pantry' },
+  { id:'noodles',     name:'Noodles',      ico:'🍜', cat:'Pantry' },
+  { id:'chickpeas',   name:'Chickpeas',    ico:'🫘', cat:'Pantry' },
+];
+
+/* ════════════════════════════════════════════
+   RECIPES DATA  (35 recipes)
+════════════════════════════════════════════ */
+const RECIPES = [
+  // ── VEGETARIAN ──
+  {
+    id:'r1', name:'Garlic sautéed spinach', ico:'🍳', time:'10 min', diff:'Easy', type:'Vegetarian',
+    needs:['spinach','garlic'], optional:['onion','butter'],
+    desc:'A classic side dish — fragrant garlic wilts fresh spinach in minutes. Quick, healthy, and full of iron.',
+    ingredients:[
+      {id:'spinach',qty:'200g',note:''},
+      {id:'garlic',qty:'3 cloves',note:''},
+      {id:'butter',qty:'1 tbsp',note:'optional'},
+      {id:'onion',qty:'½ small',note:'optional'},
+    ],
+    steps:['Heat oil (or butter) in a wide pan over medium heat.','Add sliced garlic, stir 30 sec until fragrant.','Add spinach in batches, toss until wilted (2–3 min).','Season with salt, pepper, and lemon juice.'],
+    nutrition:{cal:95,protein:'5g',carbs:'6g',fibre:'3g'}
+  },
+  {
+    id:'r2', name:'Roasted root veg tray', ico:'🫕', time:'40 min', diff:'Easy', type:'Vegetarian',
+    needs:['carrot','potato'], optional:['sweetpotato','onion','beetroot'],
+    desc:'The ultimate no-fuss dinner. Chop, toss in oil and herbs, roast until caramelised. Works with any root vegetables.',
+    ingredients:[
+      {id:'carrot',qty:'3 medium',note:''},
+      {id:'potato',qty:'2 large',note:''},
+      {id:'sweetpotato',qty:'1 medium',note:'optional'},
+      {id:'onion',qty:'1 large',note:'optional'},
+      {id:'beetroot',qty:'2 small',note:'optional'},
+    ],
+    steps:['Preheat oven to 200°C. Chop all veg into 3cm chunks.','Toss with olive oil, salt, pepper, rosemary.','Spread on large tray in a single layer.','Roast 30–35 min, turning once, until golden.'],
+    nutrition:{cal:240,protein:'5g',carbs:'42g',fibre:'7g'}
+  },
+  {
+    id:'r3', name:'Creamy potato soup', ico:'🍲', time:'35 min', diff:'Easy', type:'Vegetarian',
+    needs:['potato','milk'], optional:['carrot','onion','garlic','butter'],
+    desc:'Thick, velvety potato soup. Blend half for perfect creamy-chunky texture. Milk makes it rich without heavy cream.',
+    ingredients:[
+      {id:'potato',qty:'600g',note:''},
+      {id:'milk',qty:'200ml',note:''},
+      {id:'carrot',qty:'2 medium',note:'optional'},
+      {id:'onion',qty:'1 large',note:'optional'},
+      {id:'garlic',qty:'3 cloves',note:'optional'},
+      {id:'butter',qty:'2 tbsp',note:'optional'},
+    ],
+    steps:['Dice potatoes, carrots, and onion evenly.','Sauté onion and garlic in butter until soft, 5 min.','Add veg and stock to cover. Boil then simmer 20 min.','Blend half, stir back in, add milk, season well.'],
+    nutrition:{cal:230,protein:'6g',carbs:'40g',fibre:'4g'}
+  },
+  {
+    id:'r4', name:'Broccoli cheese pasta', ico:'🍝', time:'20 min', diff:'Easy', type:'Vegetarian',
+    needs:['broccoli','pasta','cheese'], optional:['garlic','butter','milk'],
+    desc:'Broccoli melts into a silky cheese sauce that coats every strand of pasta. Weeknight perfection.',
+    ingredients:[
+      {id:'pasta',qty:'300g',note:''},
+      {id:'broccoli',qty:'1 large head',note:''},
+      {id:'cheese',qty:'80g grated',note:''},
+      {id:'garlic',qty:'3 cloves',note:'optional'},
+      {id:'butter',qty:'2 tbsp',note:'optional'},
+      {id:'milk',qty:'50ml',note:'optional'},
+    ],
+    steps:['Cook pasta. Add broccoli florets in last 3 min.','Drain, reserving 1 cup pasta water.','Sauté garlic in butter. Add pasta and broccoli.','Crush broccoli roughly. Add cheese, pasta water. Toss.'],
+    nutrition:{cal:420,protein:'16g',carbs:'60g',fibre:'6g'}
+  },
+  {
+    id:'r5', name:'Paneer butter masala', ico:'🫕', time:'30 min', diff:'Medium', type:'Vegetarian',
+    needs:['paneer','tomato','butter'], optional:['onion','garlic','cream','milk'],
+    desc:'Restaurant-style paneer in a rich, velvety tomato-butter sauce. Fragrant with spices, deeply satisfying.',
+    ingredients:[
+      {id:'paneer',qty:'250g cubed',note:''},
+      {id:'tomato',qty:'4 large',note:''},
+      {id:'butter',qty:'3 tbsp',note:''},
+      {id:'onion',qty:'1 large',note:'optional'},
+      {id:'garlic',qty:'4 cloves',note:'optional'},
+      {id:'cream',qty:'50ml',note:'optional'},
+    ],
+    steps:['Blend tomatoes (and onion, garlic) into smooth purée.','Melt butter, fry spices (cumin, garam masala, paprika) 30 sec.','Pour in purée, cook 10 min until darkened and thick.','Add paneer, cream, salt. Simmer 5 min. Serve with rice.'],
+    nutrition:{cal:380,protein:'18g',carbs:'16g',fibre:'3g'}
+  },
+  {
+    id:'r6', name:'Stuffed bell peppers', ico:'🌶️', time:'45 min', diff:'Medium', type:'Vegetarian',
+    needs:['pepper','rice'], optional:['tomato','corn','onion','garlic','cheese'],
+    desc:'Vibrant pepper shells packed with spiced rice and vegetables. Great for meal prep too.',
+    ingredients:[
+      {id:'pepper',qty:'4 large',note:''},
+      {id:'rice',qty:'1½ cups cooked',note:''},
+      {id:'tomato',qty:'2 medium',note:'optional'},
+      {id:'corn',qty:'½ cup',note:'optional'},
+      {id:'onion',qty:'1 medium',note:'optional'},
+      {id:'cheese',qty:'60g grated',note:'optional'},
+    ],
+    steps:['Halve and deseed peppers. Roast 10 min at 200°C.','Sauté onion, garlic, corn. Mix with rice and seasoning.','Fill peppers, top with cheese. Bake 20 min.','Rest 5 min before serving with salad.'],
+    nutrition:{cal:260,protein:'9g',carbs:'38g',fibre:'5g'}
+  },
+  {
+    id:'r7', name:'Cucumber & tomato salad', ico:'🥗', time:'10 min', diff:'Easy', type:'Vegetarian',
+    needs:['cucumber','tomato'], optional:['onion','lemon','yogurt'],
+    desc:'Cool, bright, and refreshing. Ready in five minutes — the ideal summer side.',
+    ingredients:[
+      {id:'cucumber',qty:'1 large',note:''},
+      {id:'tomato',qty:'4 medium',note:''},
+      {id:'onion',qty:'½ red',note:'optional'},
+      {id:'lemon',qty:'1, juiced',note:'optional'},
+      {id:'yogurt',qty:'3 tbsp',note:'optional'},
+    ],
+    steps:['Slice cucumber. Quarter tomatoes. Thin-slice onion.','Whisk dressing: oil, vinegar or lemon, salt, oregano.','Toss everything. If using yogurt, dollop on top.','Rest 10 min before serving.'],
+    nutrition:{cal:90,protein:'2g',carbs:'12g',fibre:'3g'}
+  },
+  {
+    id:'r8', name:'Cauliflower steaks', ico:'🍽️', time:'30 min', diff:'Medium', type:'Vegetarian',
+    needs:['cauliflower'], optional:['garlic','tomato','yogurt','lemon'],
+    desc:'Thick-cut cauliflower roasted at high heat until caramelised and golden. A proper centrepiece dish.',
+    ingredients:[
+      {id:'cauliflower',qty:'1 large head',note:''},
+      {id:'garlic',qty:'3 cloves',note:'optional'},
+      {id:'tomato',qty:'2 medium',note:'optional'},
+      {id:'yogurt',qty:'4 tbsp',note:'optional'},
+      {id:'lemon',qty:'1, juiced',note:'optional'},
+    ],
+    steps:['Slice cauliflower into 2cm steaks. Keep loose florets.','Brush with oil, smoked paprika, cumin, salt.','Roast at 220°C for 22–25 min, flipping once.','Serve over yogurt with roasted tomatoes and herbs.'],
+    nutrition:{cal:170,protein:'6g',carbs:'16g',fibre:'7g'}
+  },
+  {
+    id:'r9', name:'Ratatouille', ico:'🍲', time:'60 min', diff:'Medium', type:'Vegetarian',
+    needs:['tomato','zucchini','eggplant'], optional:['pepper','onion','garlic'],
+    desc:'Classic Provençal stew. Low and slow is the secret — everything melds into something deeply satisfying.',
+    ingredients:[
+      {id:'tomato',qty:'4 large',note:''},
+      {id:'zucchini',qty:'2 medium',note:''},
+      {id:'eggplant',qty:'1 large',note:''},
+      {id:'pepper',qty:'2 medium',note:'optional'},
+      {id:'onion',qty:'1 large',note:'optional'},
+      {id:'garlic',qty:'4 cloves',note:'optional'},
+    ],
+    steps:['Dice all veg into 2cm cubes. Salt eggplant, pat dry.','Sauté onion and garlic in oil, 5 min.','Add eggplant 5 min, then all remaining veg.','Simmer 35–40 min on low until thick and melded.'],
+    nutrition:{cal:155,protein:'4g',carbs:'20g',fibre:'7g'}
+  },
+  {
+    id:'r10', name:'Chickpea curry', ico:'🍛', time:'25 min', diff:'Easy', type:'Vegetarian',
+    needs:['chickpeas','tomato'], optional:['onion','garlic','coconutmilk','spinach'],
+    desc:'Hearty, protein-rich chickpea curry with a fragrant tomato base. Done in 25 minutes from pantry staples.',
+    ingredients:[
+      {id:'chickpeas',qty:'2 cans, drained',note:''},
+      {id:'tomato',qty:'3 medium',note:''},
+      {id:'onion',qty:'1 large',note:'optional'},
+      {id:'garlic',qty:'3 cloves',note:'optional'},
+      {id:'coconutmilk',qty:'200ml',note:'optional'},
+      {id:'spinach',qty:'handful',note:'optional'},
+    ],
+    steps:['Sauté onion and garlic 5 min. Add cumin, coriander, turmeric.','Add blended tomatoes. Cook 8 min until darkened.','Add chickpeas and coconut milk. Simmer 10 min.','Stir in spinach. Season well. Serve with rice or bread.'],
+    nutrition:{cal:290,protein:'14g',carbs:'38g',fibre:'10g'}
+  },
+  // ── EGG DISHES ──
+  {
+    id:'r11', name:'Classic omelette', ico:'🍳', time:'8 min', diff:'Easy', type:'Egg',
+    needs:['egg'], optional:['cheese','mushroom','pepper','onion','butter','tomato'],
+    desc:'The perfect omelette — pale yellow outside, soft and custardy within. Master this and you own breakfast.',
+    ingredients:[
+      {id:'egg',qty:'3 large',note:''},
+      {id:'butter',qty:'1 tbsp',note:'optional'},
+      {id:'cheese',qty:'30g grated',note:'optional'},
+      {id:'mushroom',qty:'60g sliced',note:'optional'},
+      {id:'pepper',qty:'¼, diced',note:'optional'},
+      {id:'tomato',qty:'1 small',note:'optional'},
+    ],
+    steps:['Whisk eggs with salt, pepper, and 1 tbsp water.','Melt butter in non-stick pan over medium-high heat.','Pour in eggs. As edges set, draw them inward.','Add fillings to one half. Fold over. Slide onto plate.'],
+    nutrition:{cal:240,protein:'18g',carbs:'2g',fibre:'0g'}
+  },
+  {
+    id:'r12', name:'Scrambled eggs on toast', ico:'🥚', time:'10 min', diff:'Easy', type:'Egg',
+    needs:['egg','bread'], optional:['butter','milk','cheese','tomato'],
+    desc:'Slow-scrambled, soft, and creamy eggs piled high on buttered toast. The ultimate comfort breakfast.',
+    ingredients:[
+      {id:'egg',qty:'3 large',note:''},
+      {id:'bread',qty:'2 slices',note:''},
+      {id:'butter',qty:'2 tbsp',note:'optional'},
+      {id:'milk',qty:'2 tbsp',note:'optional'},
+      {id:'cheese',qty:'20g',note:'optional'},
+    ],
+    steps:['Whisk eggs with milk, salt, and pepper.','Melt butter in pan on lowest heat.','Pour in eggs. Stir slowly and constantly, removing from heat often.','Pile on buttered toast when just barely set.'],
+    nutrition:{cal:310,protein:'20g',carbs:'24g',fibre:'2g'}
+  },
+  {
+    id:'r13', name:'Shakshuka', ico:'🍳', time:'20 min', diff:'Easy', type:'Egg',
+    needs:['egg','tomato'], optional:['pepper','onion','garlic','cheese'],
+    desc:'Eggs poached directly in spiced tomato sauce. Israeli-inspired, endlessly comforting, perfect for any meal.',
+    ingredients:[
+      {id:'egg',qty:'4 large',note:''},
+      {id:'tomato',qty:'4 large or 1 can',note:''},
+      {id:'pepper',qty:'1 large',note:'optional'},
+      {id:'onion',qty:'1 medium',note:'optional'},
+      {id:'garlic',qty:'3 cloves',note:'optional'},
+      {id:'cheese',qty:'30g feta',note:'optional'},
+    ],
+    steps:['Sauté onion and pepper 5 min. Add garlic and spices.','Pour in crushed tomatoes. Simmer 10 min.','Make wells in sauce. Crack eggs in. Cover and cook 5–7 min.','Top with feta if using. Serve with bread for dipping.'],
+    nutrition:{cal:220,protein:'14g',carbs:'16g',fibre:'4g'}
+  },
+  {
+    id:'r14', name:'Egg fried rice', ico:'🍳', time:'15 min', diff:'Easy', type:'Egg',
+    needs:['egg','rice'], optional:['peas','carrot','onion','garlic','corn'],
+    desc:'Classic takeaway-style egg fried rice. Day-old rice works best — it fries up perfectly without clumping.',
+    ingredients:[
+      {id:'egg',qty:'3 large',note:''},
+      {id:'rice',qty:'2 cups cooked (cold)',note:''},
+      {id:'peas',qty:'½ cup',note:'optional'},
+      {id:'carrot',qty:'1 medium diced',note:'optional'},
+      {id:'onion',qty:'1 medium',note:'optional'},
+    ],
+    steps:['Heat oil in wok until smoking. Scramble eggs, remove.','Add veg, stir-fry 2 min on high heat.','Add cold rice. Toss and break up clumps. 3 min.','Add eggs back. Season with soy sauce and sesame oil.'],
+    nutrition:{cal:340,protein:'14g',carbs:'52g',fibre:'3g'}
+  },
+  {
+    id:'r15', name:'French toast', ico:'🍞', time:'12 min', diff:'Easy', type:'Egg',
+    needs:['egg','bread','milk'], optional:['butter','sugar','banana','strawberry'],
+    desc:'Thick slices of bread soaked in a sweet egg custard, fried until golden. A proper weekend breakfast.',
+    ingredients:[
+      {id:'egg',qty:'2 large',note:''},
+      {id:'bread',qty:'4 thick slices',note:''},
+      {id:'milk',qty:'4 tbsp',note:''},
+      {id:'butter',qty:'2 tbsp',note:'optional'},
+      {id:'sugar',qty:'1 tbsp',note:'optional'},
+      {id:'banana',qty:'1, sliced',note:'optional'},
+    ],
+    steps:['Whisk eggs, milk, sugar, and vanilla if available.','Dip bread slices fully, letting them soak 20 sec each side.','Fry in butter over medium heat, 2 min each side until golden.','Serve with banana slices, maple syrup, or strawberries.'],
+    nutrition:{cal:290,protein:'12g',carbs:'34g',fibre:'2g'}
+  },
+  // ── NON-VEG ──
+  {
+    id:'r16', name:'Butter chicken curry', ico:'🍗', time:'40 min', diff:'Medium', type:'NonVeg',
+    needs:['chicken','tomato','butter'], optional:['onion','garlic','cream','milk'],
+    desc:'The iconic Indian curry — tender chicken in a silky, slightly sweet tomato-butter sauce. Restaurant quality at home.',
+    ingredients:[
+      {id:'chicken',qty:'500g, cubed',note:''},
+      {id:'tomato',qty:'4 large',note:''},
+      {id:'butter',qty:'3 tbsp',note:''},
+      {id:'onion',qty:'1 large',note:'optional'},
+      {id:'garlic',qty:'4 cloves',note:'optional'},
+      {id:'cream',qty:'60ml',note:'optional'},
+    ],
+    steps:['Marinate chicken in yogurt and spices 20 min. Pan-fry until charred.','Blend tomatoes, onion, garlic into smooth sauce.','Melt butter, cook spices 30 sec, pour in sauce. Cook 12 min.','Add chicken, cream, and salt. Simmer 8 min. Serve with rice.'],
+    nutrition:{cal:420,protein:'38g',carbs:'12g',fibre:'2g'}
+  },
+  {
+    id:'r17', name:'Chicken fried rice', ico:'🍳', time:'20 min', diff:'Easy', type:'NonVeg',
+    needs:['chicken','rice','egg'], optional:['peas','carrot','onion','garlic'],
+    desc:'Better than takeaway — smoky, savoury fried rice with golden egg ribbons and juicy chicken.',
+    ingredients:[
+      {id:'chicken',qty:'250g diced',note:''},
+      {id:'rice',qty:'2 cups cooked (cold)',note:''},
+      {id:'egg',qty:'2 large',note:''},
+      {id:'peas',qty:'½ cup',note:'optional'},
+      {id:'carrot',qty:'1, diced',note:'optional'},
+      {id:'onion',qty:'1 medium',note:'optional'},
+    ],
+    steps:['Stir-fry chicken in hot oil until golden, set aside.','Scramble eggs in same wok, break into pieces, set aside.','Fry onion, carrot, peas 2 min. Add cold rice, toss vigorously.','Combine everything, season with soy sauce and sesame oil.'],
+    nutrition:{cal:390,protein:'32g',carbs:'42g',fibre:'3g'}
+  },
+  {
+    id:'r18', name:'Spaghetti Bolognese', ico:'🍝', time:'45 min', diff:'Medium', type:'NonVeg',
+    needs:['mince','pasta','tomato'], optional:['onion','garlic','carrot','cheese'],
+    desc:'The timeless classic. Rich, meaty ragù that clings to every strand of pasta. Low and slow is the secret.',
+    ingredients:[
+      {id:'mince',qty:'400g beef',note:''},
+      {id:'pasta',qty:'350g spaghetti',note:''},
+      {id:'tomato',qty:'400g canned',note:''},
+      {id:'onion',qty:'1 large',note:'optional'},
+      {id:'garlic',qty:'3 cloves',note:'optional'},
+      {id:'carrot',qty:'1 medium',note:'optional'},
+      {id:'cheese',qty:'parmesan to serve',note:'optional'},
+    ],
+    steps:['Sauté onion, carrot, garlic 5 min. Add mince, brown well.','Pour in tomatoes. Season with salt, pepper, Italian herbs.','Simmer 25–30 min until rich and reduced.','Cook pasta, drain. Serve with generous ladle of ragù and parmesan.'],
+    nutrition:{cal:520,protein:'36g',carbs:'56g',fibre:'5g'}
+  },
+  {
+    id:'r19', name:'Bacon & egg breakfast', ico:'🥓', time:'15 min', diff:'Easy', type:'NonVeg',
+    needs:['bacon','egg'], optional:['bread','tomato','mushroom','butter'],
+    desc:'The full classic fry-up. Crispy bacon, runny yolk, grilled tomatoes. Weekend fuel.',
+    ingredients:[
+      {id:'bacon',qty:'4 rashers',note:''},
+      {id:'egg',qty:'2 large',note:''},
+      {id:'bread',qty:'2 slices',note:'optional'},
+      {id:'tomato',qty:'1, halved',note:'optional'},
+      {id:'mushroom',qty:'100g',note:'optional'},
+    ],
+    steps:['Fry bacon in dry pan over medium heat until crisp. Remove.','In bacon fat, fry mushrooms until golden. Remove.','Fry eggs to your liking — sunny side up or over-easy.','Toast bread. Plate everything together. Season well.'],
+    nutrition:{cal:450,protein:'30g',carbs:'20g',fibre:'2g'}
+  },
+  {
+    id:'r20', name:'Fish curry', ico:'🐟', time:'25 min', diff:'Easy', type:'NonVeg',
+    needs:['fish','coconutmilk','tomato'], optional:['onion','garlic','spinach','lemon'],
+    desc:'Delicate fish poached in a fragrant coconut and tomato curry sauce. Light yet deeply satisfying.',
+    ingredients:[
+      {id:'fish',qty:'400g fillets',note:''},
+      {id:'coconutmilk',qty:'400ml can',note:''},
+      {id:'tomato',qty:'3 medium',note:''},
+      {id:'onion',qty:'1 medium',note:'optional'},
+      {id:'garlic',qty:'3 cloves',note:'optional'},
+      {id:'spinach',qty:'handful',note:'optional'},
+    ],
+    steps:['Sauté onion and garlic until golden. Add curry spices 30 sec.','Add crushed tomatoes. Cook 5 min until thickened.','Pour in coconut milk. Bring to gentle simmer.','Add fish pieces. Poach 8 min. Stir in spinach. Serve with rice.'],
+    nutrition:{cal:340,protein:'30g',carbs:'14g',fibre:'3g'}
+  },
+  {
+    id:'r21', name:'Garlic butter shrimp pasta', ico:'🍤', time:'20 min', diff:'Easy', type:'NonVeg',
+    needs:['shrimp','pasta','butter','garlic'], optional:['lemon','cheese','cream'],
+    desc:'Restaurant-quality in 20 minutes. Juicy shrimp in a glossy garlic butter sauce tossed with pasta.',
+    ingredients:[
+      {id:'shrimp',qty:'300g peeled',note:''},
+      {id:'pasta',qty:'300g',note:''},
+      {id:'butter',qty:'3 tbsp',note:''},
+      {id:'garlic',qty:'5 cloves',note:''},
+      {id:'lemon',qty:'1, zest + juice',note:'optional'},
+      {id:'cheese',qty:'parmesan to serve',note:'optional'},
+    ],
+    steps:['Cook pasta, drain (save 1 cup water).','Melt butter in pan. Add garlic, cook 1 min until golden.','Add shrimp, cook 2 min each side until pink.','Toss pasta in pan with pasta water, lemon. Season.'],
+    nutrition:{cal:460,protein:'34g',carbs:'54g',fibre:'3g'}
+  },
+  {
+    id:'r22', name:'Chicken noodle soup', ico:'🍜', time:'30 min', diff:'Easy', type:'NonVeg',
+    needs:['chicken','noodles'], optional:['carrot','onion','garlic','peas','mushroom'],
+    desc:'Soothing, light, and restorative. A bowl of this fixes everything.',
+    ingredients:[
+      {id:'chicken',qty:'300g shredded',note:''},
+      {id:'noodles',qty:'200g',note:''},
+      {id:'carrot',qty:'2 medium',note:'optional'},
+      {id:'onion',qty:'1 large',note:'optional'},
+      {id:'garlic',qty:'3 cloves',note:'optional'},
+      {id:'mushroom',qty:'100g',note:'optional'},
+    ],
+    steps:['Simmer chicken in 1.5L stock with whole garlic and onion, 15 min.','Shred chicken. Strain stock. Return to pot.','Add sliced carrot and mushroom. Simmer 8 min.','Add noodles, cook per pack time. Season and serve.'],
+    nutrition:{cal:310,protein:'28g',carbs:'32g',fibre:'3g'}
+  },
+  // ── DRINKS ──
+  {
+    id:'r23', name:'Masala chai', ico:'☕', time:'8 min', diff:'Easy', type:'Drink',
+    needs:['tea','milk'], optional:['sugar'],
+    desc:'The quintessential Indian spiced tea. Strong, aromatic, sweet, and milky. Made in one pot.',
+    ingredients:[
+      {id:'tea',qty:'2 tsp loose leaf',note:''},
+      {id:'milk',qty:'200ml',note:''},
+      {id:'sugar',qty:'1–2 tsp',note:'optional'},
+    ],
+    steps:['Add 150ml water to saucepan. Add crushed cardamom, ginger, cinnamon.','Bring to boil. Add tea, simmer 2 min.','Pour in milk and sugar. Bring back to near-boil, simmer 2 min.','Strain through fine sieve into cups. Serve hot.'],
+    nutrition:{cal:80,protein:'4g',carbs:'10g',fibre:'0g'}
+  },
+  {
+    id:'r24', name:'Classic milkshake', ico:'🥛', time:'5 min', diff:'Easy', type:'Drink',
+    needs:['milk','icecream'], optional:['banana','strawberry','sugar'],
+    desc:'Thick, cold, ridiculously satisfying. Pick your flavour — vanilla, banana, or strawberry.',
+    ingredients:[
+      {id:'milk',qty:'200ml cold',note:''},
+      {id:'icecream',qty:'3 large scoops',note:''},
+      {id:'banana',qty:'1, sliced',note:'optional'},
+      {id:'strawberry',qty:'6–8 berries',note:'optional'},
+    ],
+    steps:['Combine milk and ice cream in blender.','Add banana or strawberries for flavour.','Blend 30–45 sec until smooth and thick.','Pour into tall glass. Serve immediately with straw.'],
+    nutrition:{cal:380,protein:'8g',carbs:'52g',fibre:'1g'}
+  },
+  {
+    id:'r25', name:'Mango lassi', ico:'🥭', time:'5 min', diff:'Easy', type:'Drink',
+    needs:['mango','yogurt','milk'], optional:['sugar'],
+    desc:'The famous Indian drink — cool, creamy, and loaded with mango flavour. Beats any shop-bought version.',
+    ingredients:[
+      {id:'mango',qty:'1 large ripe',note:''},
+      {id:'yogurt',qty:'200ml',note:''},
+      {id:'milk',qty:'100ml',note:''},
+      {id:'sugar',qty:'1 tbsp',note:'optional'},
+    ],
+    steps:['Peel and cube mango. Add to blender.','Add yogurt, milk, and sugar.','Blend until completely smooth, 30–40 sec.','Pour over ice. Dust with cardamom powder if available.'],
+    nutrition:{cal:210,protein:'7g',carbs:'36g',fibre:'2g'}
+  },
+  {
+    id:'r26', name:'Banana smoothie', ico:'🍌', time:'5 min', diff:'Easy', type:'Drink',
+    needs:['banana','milk'], optional:['yogurt','oats','sugar'],
+    desc:'Thick, creamy, and naturally sweet. Add oats to make it a meal in a glass.',
+    ingredients:[
+      {id:'banana',qty:'2 ripe',note:''},
+      {id:'milk',qty:'250ml',note:''},
+      {id:'yogurt',qty:'2 tbsp',note:'optional'},
+      {id:'oats',qty:'2 tbsp',note:'optional'},
+    ],
+    steps:['Peel and freeze bananas for extra thickness (or use fresh).','Add milk, banana, yogurt, and oats to blender.','Blend until smooth, about 30 sec.','Pour and serve immediately.'],
+    nutrition:{cal:220,protein:'7g',carbs:'42g',fibre:'3g'}
+  },
+  {
+    id:'r27', name:'Iced coffee', ico:'☕', time:'5 min', diff:'Easy', type:'Drink',
+    needs:['coffee','milk'], optional:['sugar','icecream'],
+    desc:'Cold, creamy, and energising. Make strong coffee, let it cool, pour over ice and milk.',
+    ingredients:[
+      {id:'coffee',qty:'2 shots strong',note:''},
+      {id:'milk',qty:'150ml cold',note:''},
+      {id:'sugar',qty:'1 tsp',note:'optional'},
+      {id:'icecream',qty:'1 scoop',note:'optional'},
+    ],
+    steps:['Brew strong coffee (espresso or strong filter). Let cool.','Fill tall glass with ice cubes.','Pour coffee over ice, add sugar and stir.','Pour in cold milk. Add ice cream scoop for affogato style.'],
+    nutrition:{cal:95,protein:'4g',carbs:'10g',fibre:'0g'}
+  },
+  {
+    id:'r28', name:'Cola float', ico:'🥤', time:'2 min', diff:'Easy', type:'Drink',
+    needs:['cola','icecream'], optional:[],
+    desc:'The ultimate retro treat. Cold fizzy cola meets a scoop of vanilla ice cream — simple, nostalgic, perfect.',
+    ingredients:[
+      {id:'cola',qty:'330ml cold can',note:''},
+      {id:'icecream',qty:'2 scoops vanilla',note:''},
+    ],
+    steps:['Chill a tall glass in the freezer for 5 min.','Add ice cream scoops to the cold glass.','Slowly pour cola around the edges (not directly on ice cream).','Serve immediately with a long spoon and straw.'],
+    nutrition:{cal:260,protein:'3g',carbs:'42g',fibre:'0g'}
+  },
+  // ── BAKED / SWEET ──
+  {
+    id:'r29', name:'Banana pancakes', ico:'🥞', time:'15 min', diff:'Easy', type:'Snack',
+    needs:['banana','egg','flour'], optional:['milk','butter','sugar','strawberry'],
+    desc:'Fluffy, naturally sweet pancakes with mashed banana baked right in. No syrup needed.',
+    ingredients:[
+      {id:'banana',qty:'2 ripe, mashed',note:''},
+      {id:'egg',qty:'2 large',note:''},
+      {id:'flour',qty:'100g',note:''},
+      {id:'milk',qty:'100ml',note:'optional'},
+      {id:'butter',qty:'1 tbsp',note:'optional'},
+    ],
+    steps:['Mash bananas until smooth. Whisk in eggs.','Add flour, milk, pinch of salt. Mix until just smooth.','Heat buttered pan over medium heat.','Pour small rounds. Cook 2 min until bubbles form, flip, 1 min more.'],
+    nutrition:{cal:280,protein:'10g',carbs:'44g',fibre:'3g'}
+  },
+  {
+    id:'r30', name:'Overnight oats', ico:'🥣', time:'5 min + overnight', diff:'Easy', type:'Snack',
+    needs:['oats','milk'], optional:['yogurt','banana','strawberry','sugar'],
+    desc:'Zero effort breakfast. Mix everything, refrigerate overnight, wake up to a ready-to-eat meal.',
+    ingredients:[
+      {id:'oats',qty:'80g rolled',note:''},
+      {id:'milk',qty:'200ml',note:''},
+      {id:'yogurt',qty:'3 tbsp',note:'optional'},
+      {id:'banana',qty:'½, sliced',note:'optional'},
+      {id:'strawberry',qty:'handful',note:'optional'},
+      {id:'sugar',qty:'1 tsp',note:'optional'},
+    ],
+    steps:['Add oats to jar or bowl. Pour in milk.','Stir in yogurt and sugar if using.','Cover and refrigerate overnight (at least 4 hours).','Top with banana and strawberries in the morning.'],
+    nutrition:{cal:310,protein:'11g',carbs:'52g',fibre:'6g'}
+  },
+  {
+    id:'r31', name:'Simple bread pizza', ico:'🍕', time:'12 min', diff:'Easy', type:'Snack',
+    needs:['bread','tomato','cheese'], optional:['pepper','mushroom','onion','garlic'],
+    desc:'Pizza in minutes using sliced bread as the base. Crispy, melty, satisfying. Kids love this.',
+    ingredients:[
+      {id:'bread',qty:'4 thick slices',note:''},
+      {id:'tomato',qty:'2, sliced',note:''},
+      {id:'cheese',qty:'80g grated',note:''},
+      {id:'pepper',qty:'½, sliced',note:'optional'},
+      {id:'mushroom',qty:'50g sliced',note:'optional'},
+      {id:'onion',qty:'¼, rings',note:'optional'},
+    ],
+    steps:['Preheat grill/broiler to high.','Spread tomato paste or crushed tomato on bread.','Add toppings. Cover generously with cheese.','Grill 5–6 min until cheese bubbles and edges toast.'],
+    nutrition:{cal:260,protein:'12g',carbs:'28g',fibre:'3g'}
+  },
+  {
+    id:'r32', name:'Mango ice cream', ico:'🍦', time:'10 min + freeze', diff:'Easy', type:'Snack',
+    needs:['mango','cream','sugar'], optional:['milk'],
+    desc:'No-churn mango ice cream with just three ingredients. Bright, fruity, and incredibly easy.',
+    ingredients:[
+      {id:'mango',qty:'2 large ripe',note:''},
+      {id:'cream',qty:'300ml heavy',note:''},
+      {id:'sugar',qty:'4 tbsp',note:''},
+      {id:'milk',qty:'2 tbsp',note:'optional'},
+    ],
+    steps:['Purée mango flesh until completely smooth.','Whip cream to stiff peaks. Fold in sugar.','Gently fold mango purée through cream.','Pour into container, freeze minimum 6 hours before serving.'],
+    nutrition:{cal:290,protein:'3g',carbs:'32g',fibre:'2g'}
+  },
+  {
+    id:'r33', name:'Apple crumble', ico:'🍎', time:'40 min', diff:'Easy', type:'Snack',
+    needs:['apple','oats','butter','sugar','flour'], optional:['cream','icecream'],
+    desc:'Warm, spiced apple filling topped with a golden oat crumble. The definitive comfort dessert.',
+    ingredients:[
+      {id:'apple',qty:'5 large',note:''},
+      {id:'oats',qty:'80g',note:''},
+      {id:'butter',qty:'80g cold, cubed',note:''},
+      {id:'sugar',qty:'60g',note:''},
+      {id:'flour',qty:'60g',note:''},
+      {id:'icecream',qty:'to serve',note:'optional'},
+    ],
+    steps:['Peel and slice apples. Toss with 2 tbsp sugar and cinnamon. Fill baking dish.','Mix flour, oats, remaining sugar. Rub in cold butter until crumbly.','Spread crumble over apples.','Bake at 190°C for 30 min until golden. Serve with ice cream.'],
+    nutrition:{cal:340,protein:'4g',carbs:'52g',fibre:'5g'}
+  },
+  {
+    id:'r34', name:'Strawberry yogurt parfait', ico:'🍓', time:'5 min', diff:'Easy', type:'Snack',
+    needs:['strawberry','yogurt'], optional:['oats','sugar','banana'],
+    desc:'Layered in a glass — creamy yogurt, fresh berries, and crunchy oats. Healthy, beautiful, zero cooking.',
+    ingredients:[
+      {id:'strawberry',qty:'200g, hulled',note:''},
+      {id:'yogurt',qty:'300ml',note:''},
+      {id:'oats',qty:'40g granola or oats',note:'optional'},
+      {id:'sugar',qty:'1 tsp honey',note:'optional'},
+    ],
+    steps:['Halve strawberries. Mix with honey if using.','Add layer of yogurt to glass.','Add oats or granola layer.','Top with strawberries. Repeat layers. Serve immediately.'],
+    nutrition:{cal:180,protein:'8g',carbs:'26g',fibre:'3g'}
+  },
+  {
+    id:'r35', name:'Lemon & honey tea', ico:'🍵', time:'5 min', diff:'Easy', type:'Drink',
+    needs:['tea','lemon'], optional:['sugar'],
+    desc:'Simple, soothing, and warming. Lemon and honey transform a plain cup of tea into something therapeutic.',
+    ingredients:[
+      {id:'tea',qty:'1 tea bag',note:''},
+      {id:'lemon',qty:'½, juiced',note:''},
+      {id:'sugar',qty:'1 tsp honey',note:'optional'},
+    ],
+    steps:['Brew tea bag in 250ml boiling water for 3 min.','Remove bag. Squeeze in lemon juice.','Stir in honey to taste.','Serve hot. Add a lemon slice for extra freshness.'],
+    nutrition:{cal:20,protein:'0g',carbs:'5g',fibre:'0g'}
+  },
+];
+
+/* ════════════════════════════════════════════
+   STATE
+════════════════════════════════════════════ */
+let selected = new Set();
+let activeCategory = 'All';
+let searchQuery = '';
+let activeTypeFilter = 'All';
+
+const CAT_DOTS = {
+  'Vegetables':'dot-veg','Dairy':'dot-dairy','Non-Veg':'dot-meat',
+  'Eggs':'dot-egg','Pantry':'dot-pantry','Drinks':'dot-drink','Fruits':'dot-fruit'
+};
+
+/* ════════════════════════════════════════════
+   INIT
+════════════════════════════════════════════ */
+function init() {
+  const cats = ['All', ...new Set(VEGS.map(v => v.cat))];
+  const tabsEl = document.getElementById('catTabs');
+  cats.forEach(cat => {
+    const btn = document.createElement('button');
+    btn.className = 'cat-btn' + (cat === 'All' ? ' active' : '');
+    const dot = cat !== 'All' && CAT_DOTS[cat]
+      ? `<span class="cat-dot ${CAT_DOTS[cat]}"></span>` : '';
+    btn.innerHTML = dot + cat;
+    btn.onclick = () => selectCategory(cat);
+    tabsEl.appendChild(btn);
+  });
+
+  renderIngredientGrid();
+  document.getElementById('statVegs').textContent = VEGS.length;
+  document.getElementById('statRecipes').textContent = RECIPES.length;
+}
+
+/* ════════════════════════════════════════════
+   RENDER INGREDIENT GRID (grouped by cat)
+════════════════════════════════════════════ */
+function renderIngredientGrid() {
+  const container = document.getElementById('vegGrid');
+  container.innerHTML = '';
+
+  const cats = activeCategory === 'All'
+    ? [...new Set(VEGS.map(v => v.cat))]
+    : [activeCategory];
+
+  cats.forEach(cat => {
+    const items = VEGS.filter(v => {
+      const inCat = v.cat === cat;
+      const inSearch = v.name.toLowerCase().includes(searchQuery.toLowerCase());
+      return inCat && inSearch;
+    });
+    if (!items.length) return;
+
+    // Only show section header when showing 'All'
+    if (activeCategory === 'All') {
+      const label = document.createElement('div');
+      label.className = 'cat-section';
+      const header = document.createElement('div');
+      header.className = 'cat-label';
+      const dot = CAT_DOTS[cat] ? `<span class="cat-dot ${CAT_DOTS[cat]}" style="width:7px;height:7px;border-radius:50%;display:inline-block;margin-right:4px"></span>` : '';
+      header.innerHTML = dot + cat;
+      label.appendChild(header);
+
+      const grid = document.createElement('div');
+      grid.className = 'veg-grid';
+      items.forEach((v, i) => {
+        grid.appendChild(makeVCard(v, i));
+      });
+      label.appendChild(grid);
+      container.appendChild(label);
+    } else {
+      const grid = document.createElement('div');
+      grid.className = 'veg-grid';
+      items.forEach((v, i) => grid.appendChild(makeVCard(v, i)));
+      container.appendChild(grid);
+    }
+  });
+}
+
+function makeVCard(v, i) {
+  const d = document.createElement('div');
+  d.className = 'vcard' + (selected.has(v.id) ? ' sel' : '');
+  d.style.animationDelay = `${i * 0.025}s`;
+  d.innerHTML = `<div class="vcard-check">✓</div><span class="vcard-ico">${v.ico}</span><span class="vcard-name">${v.name}</span>`;
+  d.onclick = () => toggleVeg(v.id);
+  return d;
+}
+
+function toggleVeg(id) {
+  selected.has(id) ? selected.delete(id) : selected.add(id);
+  renderIngredientGrid();
+  updateSelectionUI();
+}
+
+function selectCategory(cat) {
+  activeCategory = cat;
+  document.querySelectorAll('.cat-btn').forEach(b => {
+    b.classList.toggle('active', b.textContent.trim() === cat || (cat === 'All' && b.textContent.trim() === 'All'));
+  });
+  renderIngredientGrid();
+}
+
+function filterVegs(q) {
+  searchQuery = q;
+  renderIngredientGrid();
+}
+
+/* ════════════════════════════════════════════
+   SELECTION UI
+════════════════════════════════════════════ */
+function updateSelectionUI() {
+  const summary = document.getElementById('selSummary');
+  const btn = document.getElementById('findBtn');
+  const countEl = document.getElementById('selCount');
+  const statSel = document.getElementById('statSelected');
+
+  statSel.textContent = selected.size;
+  countEl.textContent = selected.size + ' selected';
+
+  if (selected.size === 0) {
+    summary.innerHTML = '<span class="sel-hint">Pick ingredients you have at home</span>';
+    btn.disabled = true;
+  } else {
+    summary.innerHTML = [...selected].map(id => {
+      const v = VEGS.find(x => x.id === id);
+      return `<span class="sel-chip" onclick="toggleVeg('${id}')">
+        ${v.ico} ${v.name} <span class="sel-chip-x">×</span>
+      </span>`;
+    }).join('');
+    btn.disabled = false;
+  }
+}
+
+/* ════════════════════════════════════════════
+   FIND RECIPES
+════════════════════════════════════════════ */
+function findRecipes() {
+  const area = document.getElementById('resultsArea');
+  area.innerHTML = `<div class="state-box"><div class="state-ico">🔍</div><div class="state-title">Finding your recipes…</div></div>`;
+
+  setTimeout(() => {
+    let scored = RECIPES.map(r => {
+      const allIds = [...(r.needs||[]), ...(r.optional||[])];
+      const haveNeeded = r.needs.filter(n => selected.has(n)).length;
+      const haveOpt    = (r.optional||[]).filter(o => selected.has(o)).length;
+      const missingNeeded = r.needs.filter(n => !selected.has(n)).length;
+      return { ...r, haveNeeded, haveOpt, missingNeeded, score: haveNeeded * 3 + haveOpt };
+    })
+    .filter(r => r.haveNeeded > 0)
+    .sort((a, b) => a.missingNeeded - b.missingNeeded || b.score - a.score);
+
+    if (activeTypeFilter !== 'All') {
+      scored = scored.filter(r => r.type === activeTypeFilter);
+    }
+
+    document.getElementById('statMatches').textContent = scored.length || '0';
+
+    if (!scored.length) {
+      area.innerHTML = `<div class="state-box">
+        <div class="state-ico">😕</div>
+        <div class="state-title">No recipes found</div>
+        <div class="state-desc">Try adding more ingredients, or change the filter above.</div>
+      </div>`;
+      return;
+    }
+
+    const types = ['All', ...new Set(RECIPES.map(r => r.type))];
+    let html = `<div class="results-header">
+      <div class="results-title">${scored.length} recipe${scored.length>1?'s':''} found</div>
+      <div class="filter-row">
+        ${types.map(t => `<button class="filter-pill ${activeTypeFilter===t?'on':''}" onclick="setTypeFilter('${t}')">${t==='NonVeg'?'Non-Veg':t}</button>`).join('')}
+      </div>
+    </div>
+    <div class="recipe-grid">`;
+
+    scored.forEach((r, i) => {
+      const perfect = r.missingNeeded === 0;
+      const pct = Math.round((r.haveNeeded / r.needs.length) * 100);
+
+      const allVegIds = [...(r.needs||[]), ...(r.optional||[])];
+      const tagsHtml = allVegIds.map(id => {
+        const v = VEGS.find(x => x.id === id);
+        const have = selected.has(id);
+        const needed = r.needs.includes(id);
+        return `<span class="itag ${have?'have':needed?'missing':''}">${v?v.ico+' '+v.name:id}${!needed?' ·opt':''}</span>`;
+      }).join('');
+
+      const ingrRows = r.ingredients.map(ing => {
+        const v = VEGS.find(x => x.id === ing.id);
+        const have = selected.has(ing.id);
+        const isOpt = ing.note === 'optional';
+        const cls = isOpt ? 'optional' : have ? 'have' : 'missing';
+        const status = isOpt ? 'optional' : have ? '✓ you have this' : '✗ need this';
+        return `<div class="ingr-row">
+          <div class="ingr-dot ${cls}"></div>
+          <span class="ingr-name">${v?v.ico+' ':''} ${ing.qty} ${v?v.name:ing.id}</span>
+          <span class="ingr-status ${cls}">${status}</span>
+        </div>`;
+      }).join('');
+
+      const stepsHtml = r.steps.map((s, idx) => `
+        <div class="step"><div class="step-num">${idx+1}</div><span>${s}</span></div>`).join('');
+
+      const n = r.nutrition;
+      const nutrHtml = `<div class="nutrition-row">
+        <div class="nutr-item"><div class="nutr-val">${n.cal}</div><div class="nutr-lbl">Calories</div></div>
+        <div class="nutr-item"><div class="nutr-val">${n.protein}</div><div class="nutr-lbl">Protein</div></div>
+        <div class="nutr-item"><div class="nutr-val">${n.carbs}</div><div class="nutr-lbl">Carbs</div></div>
+        <div class="nutr-item"><div class="nutr-val">${n.fibre}</div><div class="nutr-lbl">Fibre</div></div>
+      </div>`;
+
+      const typeLabel = r.type === 'NonVeg' ? 'Non-Veg' : r.type;
+
+      html += `<div class="rcard ${perfect?'perfect':''}" id="rc-${r.id}" style="animation-delay:${i*0.045}s">
+        <div class="rcard-head" onclick="toggleCard('${r.id}')">
+          <div class="rcard-ico-wrap">${r.ico}</div>
+          <div class="rcard-info">
+            <div class="rcard-name">${r.name}</div>
+            <div class="rcard-meta">
+              <span class="meta-pill time">⏱ ${r.time}</span>
+              <span class="meta-pill">${r.diff}</span>
+              <span class="cat-badge ${r.type}">${typeLabel}</span>
+              ${perfect?'<span class="meta-pill" style="background:rgba(168,201,127,.11);color:var(--green-l);border-color:rgba(168,201,127,.28)">✓ Perfect match</span>':''}
+            </div>
+            <div class="ingr-tags">${tagsHtml}</div>
+          </div>
+          <div class="rcard-right">
+            <div class="match-score ${perfect?'perfect':'partial'}">${perfect?'✓':pct+'%'}</div>
+            <div class="match-label">${perfect?'all present':'match'}</div>
+            <span class="expand-arrow">▾</span>
+          </div>
+        </div>
+        <div class="rcard-body">
+          <div class="recipe-desc">${r.desc}</div>
+          <div class="body-cols">
+            <div><div class="col-title">Ingredients</div><div class="ingr-list">${ingrRows}</div></div>
+            <div><div class="col-title">Method</div><div class="steps-list">${stepsHtml}</div></div>
+          </div>
+          ${nutrHtml}
+        </div>
+      </div>`;
+    });
+
+    html += `</div>`;
+    area.innerHTML = html;
+    if (scored.length > 0) document.getElementById(`rc-${scored[0].id}`)?.classList.add('open');
+  }, 300);
+}
+
+function setTypeFilter(t) {
+  activeTypeFilter = t;
+  findRecipes();
+}
+
+function toggleCard(id) {
+  document.getElementById(`rc-${id}`)?.classList.toggle('open');
+}
+
+init();
+</script>
+</body>
+</html>
